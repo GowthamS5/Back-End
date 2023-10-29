@@ -16,19 +16,17 @@ static createEmployee(employeeData, callback) {
     const formattedDOB = new Date(DOB).toISOString().split('T')[0];
     const createProcedure = 'createem';
 
-    db.query(
-      'SELECT COUNT(*) AS count FROM employeedetails WHERE DOB = ?',
-      [formattedDOB],
-      (countErr, countResult) => {
-        if (countErr) {
-          console.error(countErr);
-          return callback(countErr, null);
-        }
-        const count = countResult[0].count;
+       db.query('CALL CountEmployeesWithDOB(?)', [formattedDOB], (err, results) => {
+      if (err) {
+        console.error('Error calling stored procedure:', err);
+        return callback(err, null);
+      }
 
-        if (count > 0) {
-          return callback({ message: 'An employee with the same Date of Birth already exists.' }, null);
-        }
+      const count = results[0][0].count;
+
+      if (count > 0) {
+        return callback({ message: 'An employee with the same Date of Birth already exists.' }, null);
+      }
 
         db.query(
           `CALL ${createProcedure}(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
