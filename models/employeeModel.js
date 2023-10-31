@@ -1,80 +1,61 @@
 const db = require('../config/database');
+const SP = require('./SP');
 
 class EmployeeModel {
-static createEmployee(employeeData, callback) {
-    const {
-      first_name,
-      last_name,
-      department,
-      salary,
-      DOB,
-      email,
-      password,
-      role,
-      imageFilePath
-    } = employeeData;
-    const formattedDOB = new Date(DOB).toISOString().split('T')[0];
-    const createProcedure = 'createem';
+  static createEmployee(employeeData, callback) {
+    const procedure = SP.createEmployee.name;
+    const countProcedure = SP.countEmployeesWithDOB.name;
 
-       db.query('CALL CountEmployeesWithDOB(?)', [formattedDOB], (err, results) => {
-      if (err) {
-        console.error('Error calling stored procedure:', err);
-        return callback(err, null);
+    const formattedDOB = new Date(employeeData.DOB).toISOString().split('T')[0];
+    const parameterValues = Object.values(employeeData);
+
+    db.query(countProcedure, [formattedDOB], (countErr, countResult) => {
+      if (countErr) {
+        console.error('Error checking DOB:', countErr);
+        return callback(countErr, null);
       }
 
-      const count = results[0][0].count;
+      const count = countResult[0][0].count;
 
       if (count > 0) {
         return callback({ message: 'An employee with the same Date of Birth already exists.' }, null);
       }
 
-        db.query(
-          `CALL ${createProcedure}(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [first_name, last_name, department, salary, formattedDOB, email, password, role, imageFilePath],
-          (err, result) => {
-            if (err) {
-              console.error(err);
-              return callback(err, null);
-            }
-            callback(null, result);
-          }
-        );
-      }
-    );
-  }
-
-
-static updateEmployee(employeeId, employeeData, callback) {
-    const { first_name, last_name, email, password, role, department, salary, image ,userRole,} = employeeData;
-  console.log('userRole in model:',userRole);
-  console.log('value in model:', employeeData);
-    db.query(
-      'CALL UpdateEmployee5(?, ?, ?, ?, ?, ?, ?, ?, ?,?)',
-      [employeeId, first_name, last_name, email, password, role, department, salary, image,userRole,],
-      (err, results) => {
-        if (err) {
-          console.error('Error updating employee:', err);
-          callback(err, null);
-        } else {
-          console.log('Employee updated:', results);
-          callback(null, results);
+      db.query(procedure, parameterValues, (createErr, createResult) => {
+        if (createErr) {
+          console.error('Error creating employee:', createErr);
+          return callback(createErr, null);
         }
-      }
-    );
+        callback(null, createResult);
+      });
+    });
   }
 
+  static updateEmployee(employeeId, employeeData, callback) {
+    const procedure = SP.updateEmployee.name;
+    const parameterValues = [employeeId, ...Object.values(employeeData)];
 
+    db.query(procedure, parameterValues, (err, results) => {
+      if (err) {
+        console.error('Error updating employee:', err);
+        callback(err, null);
+      } else {
+        console.log('Employee updated:', results);
+        callback(null, results);
+      }
+    });
+  }
 
   static deleteEmployee(employeeId, callback) {
-    const getProcedure = 'Getem';
+    const getProcedure = SP.getEmployee.name; 
     let deletedEmployee;
 
-    db.query(`CALL ${getProcedure}(?)`, [employeeId], (err, rows) => {
+    db.query(getProcedure, [employeeId], (err, rows) => {
       if (!err && rows.length > 0) {
         deletedEmployee = rows[0];
-        const deleteProcedure = 'Deleteem';
 
-        db.query(`CALL ${deleteProcedure}(?)`, [employeeId], (deleteErr, result) => {
+        const deleteProcedure = SP.deleteEmployee.name;
+        db.query(deleteProcedure, [employeeId], (deleteErr, result) => {
           if (deleteErr) {
             console.error(deleteErr);
             return callback(deleteErr, null);
@@ -87,17 +68,18 @@ static updateEmployee(employeeId, employeeData, callback) {
     });
   }
 
+  static getEmployeeDetails(userRole, employeeId, callback) {
+    const procedure = SP.getEmployeeDetails.name; 
+    const parameterValues = [userRole, employeeId];
 
-static getEmployeeDetails(userRole, employeeId, callback) {
-  const sql = 'CALL GetEmployeeDetails(?, ?)';
-  console.log('in model said:', employeeId,userRole);
-  db.query(sql, [userRole, employeeId], (error, results) => {
-    if (error) {
-      callback(error, null);
-    } else {
-      callback(null, results[0]);
-    }
-  });
+    db.query(procedure, parameterValues , (error, results) => {
+      if (error) {
+        callback(error, null);
+      } else {
+        callback(null, results[0]);   
+      }
+    });
+  }
 }
-}
+
 module.exports = EmployeeModel;
