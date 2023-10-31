@@ -3,8 +3,8 @@ const SP = require('./SP');
 
 class EmployeeModel {
   static createEmployee(employeeData, callback) {
-    const procedure = SP.createEmployee.name;
-    const countProcedure = SP.countEmployeesWithDOB.name;
+    const procedure = SP.createEmployee;
+    const countProcedure = SP.countEmployeesWithDOB;
 
     const formattedDOB = new Date(employeeData.DOB).toISOString().split('T')[0];
     const parameterValues = Object.values(employeeData);
@@ -32,7 +32,7 @@ class EmployeeModel {
   }
 
   static updateEmployee(employeeId, employeeData, callback) {
-    const procedure = SP.updateEmployee.name;
+    const procedure = SP.updateEmployee;
     const parameterValues = [employeeId, ...Object.values(employeeData)];
 
     db.query(procedure, parameterValues, (err, results) => {
@@ -47,14 +47,14 @@ class EmployeeModel {
   }
 
   static deleteEmployee(employeeId, callback) {
-    const getProcedure = SP.getEmployee.name; 
+    const getProcedure = SP.getEmployee; 
     let deletedEmployee;
 
     db.query(getProcedure, [employeeId], (err, rows) => {
       if (!err && rows.length > 0) {
         deletedEmployee = rows[0];
 
-        const deleteProcedure = SP.deleteEmployee.name;
+        const deleteProcedure = SP.deleteEmployee;
         db.query(deleteProcedure, [employeeId], (deleteErr, result) => {
           if (deleteErr) {
             console.error(deleteErr);
@@ -69,7 +69,7 @@ class EmployeeModel {
   }
 
   static getEmployeeDetails(userRole, employeeId, callback) {
-    const procedure = SP.getEmployeeDetails.name; 
+    const procedure = SP.getEmployeeDetails; 
     const parameterValues = [userRole, employeeId];
 
     db.query(procedure, parameterValues , (error, results) => {
