@@ -27,7 +27,7 @@ class UserController {
         const token = jwt.sign(
           { userId, role, employee_id },
           secret,
-          { expiresIn: '30s' }
+          { expiresIn: '1h' }
         );
 
         console.log(`User ID: ${userId}, Role: ${role}, Employee ID: ${employee_id}`);
