@@ -27,12 +27,16 @@ class UserController {
         const token = jwt.sign(
           { userId, role, employee_id },
           secret,
-          { expiresIn: '1h' }
+          { expiresIn: '30s' }
         );
 
         console.log(`User ID: ${userId}, Role: ${role}, Employee ID: ${employee_id}`);
 
-        res.status(200).json({ success: true, role, userId, employee_id, token });
+        res.status(200).json({
+          status: true,
+          msg: 'Login successful',
+          data: { role, employee_id, token },
+        });
       }
     } catch (err) {
       console.error('Error:', err);
