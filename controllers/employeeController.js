@@ -2,26 +2,17 @@ const EmployeeModel = require('../models/employeeModel');
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const secretKey = process.env.SECRECT_KEY;
+const { addEmployeeSchema, updateEmployeeSchema } = require('./employeeValidation');
+
 
 class EmployeeController {
 
   static addEmployee(req, res) {
-    const schema = Joi.object({
-      first_name: Joi.string().min(3).max(50).required(),
-      last_name: Joi.string().min(1).max(50).required(),
-      department: Joi.string().min(1).max(50).required(),
-      salary: Joi.number().min(0).required(),
-      DOB: Joi.date().iso().required(),
-      email: Joi.string().email().required(),
-      password: Joi.string().min(6).required(),
-      role: Joi.number().valid(0, 1).required(),
-    });
+    const { error } = addEmployeeSchema.validate(req.body);
 
-    const { error } = schema.validate(req.body);
-
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
 
     const { first_name, last_name, department, salary, DOB, email, password, role } = req.body;
 
@@ -53,10 +44,10 @@ class EmployeeController {
         (err, result) => {
            if (err) {
             if (err.message === 'An employee with the same Date of Birth already exists.') {
-              return res.status(400).json({ message: err.message });
+              return res.status(400).json({ status: false, message: 'fail', data: null });
             }
             console.error(err);
-            return res.status(500).json({ message: 'Error adding employee.' });
+            return res.status(500).json({ status: false, message: 'Error add employees', data: null });
           }
 
           const createdEmployee = {
@@ -70,13 +61,13 @@ class EmployeeController {
             image: imageFilePath,
           };
 
-          res.status(201).json({ message: 'Employee added successfully', employeeDetails: createdEmployee });
+           res.status(201).json({ status: true, message: 'Employee Add Successful', data: createdEmployee });
         }
       );
     });
   }
 
-  static updateEmployee(req, res) {
+    static updateEmployee(req, res) {
     const employeeId = req.params.id;
 
     const {
@@ -93,27 +84,7 @@ class EmployeeController {
     console.log('values:', req.body);
     console.log('userRole in controller said:', userRole);
 
-    const schema = Joi.object();
-    if (userRole === 0) {
-      schema.keys({
-        first_name: Joi.string().min(3).max(50).required(),
-        last_name: Joi.string().min(1).max(50).required(),
-        email: Joi.string().email().required(),
-        password: Joi.string().min(6).required(),
-        userRole: Joi.number().valid(0).required(),
-      });
-    } else if (userRole === 1) {
-      schema.keys({
-        first_name: Joi.string().min(3).max(50).required(),
-        last_name: Joi.string().min(1).max(50).required(),
-        department: Joi.string().min(1).max(50).required(),
-        salary: Joi.number().min(3).required(),
-        email: Joi.string().email().required(),
-        password: Joi.string().min(6).required(),
-        role: Joi.number().valid(0, 1).required(),
-        userRole: Joi.number().valid(1).required(),
-      });
-    }
+    const schema = updateEmployeeSchema(userRole);
 
     const { error } = schema.validate(req.body);
 
@@ -124,7 +95,7 @@ class EmployeeController {
     bcrypt.hash(password, 10, (hashErr, hash) => {
       if (hashErr) {
         console.error(hashErr);
-        return res.status(500).json({ message: 'Error updating employee.' });
+        return res.status(500).json({  status: false, message: 'Error updating employee.' });
       }
 
       const image = `http://localhost:3001/profile/${req.file.filename}`;
@@ -135,7 +106,7 @@ class EmployeeController {
           first_name,
           last_name,
           email,
-          password: hash, // Store the hashed password
+          password: hash,
           role,
           department,
           salary,
@@ -152,14 +123,14 @@ class EmployeeController {
             first_name,
             last_name,
             email,
-            password: hash, 
+            password: hash,
             department,
             salary,
             role,
             image: req.file.filename,
           };
 
-          res.json(updatedEmployee);
+         res.json({ status: true, message: 'Updated Successful', data: updatedEmployee });
         }
       );
     });
@@ -169,20 +140,20 @@ class EmployeeController {
     const employeeId = req.params.id;
 
     if (!employeeId) {
-      return res.status(400).json({ message: 'Employee ID is required.' });
+      return res.status(400).json({ status: false, message: 'Employee ID is required.' });
     }
 
     EmployeeModel.deleteEmployee(employeeId, (err, deletedEmployee) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ message: 'Error deleting employee.' });
+        return res.status(500).json({ status: false, message: 'Error deleting employee.' });
       }
 
       if (!deletedEmployee) {
-        return res.status(404).json({ message: 'Employee not found' });
+        return res.status(404).json({ status: false,message: 'Employee not found' });
       }
 
-      res.status(200).json({ message: `Employee with ID ${employeeId} deleted.`, deletedEmployee });
+      res.status(200).json({ status: true, message: `Employee with ID ${employeeId} deleted.`, data:deletedEmployee });
     });
   }
 
@@ -192,10 +163,10 @@ class EmployeeController {
 
     EmployeeModel.getEmployeeDetails(userRole, employeeId, (error, data) => {
       if (error) {
-        return res.status(500).json({ error: 'An error occurred' });
+        return res.status(500).json({ status: false, error: 'An error occurred' });
       }
 
-      res.json(data);
+        res.status(200).json({ status: true, message: 'success',  data });
     });
   }
 }
